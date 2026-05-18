@@ -20,13 +20,3 @@ Use your provided production deployment:
 
 - Data is stored in `tripExpenses` table with index `by_tripKey`.
 - CORS is enabled for browser usage from GitHub Pages.
-
-
-## CI workflows
-
-This repository deploys Convex from GitHub Actions using:
-
-- `.github/workflows/deploy-convex.yml` (production on `main`)
-- `.github/workflows/preview-convex-pr.yml` (preview on PRs)
-
-Both require the `CONVEX_DEPLOY_KEY` GitHub secret.

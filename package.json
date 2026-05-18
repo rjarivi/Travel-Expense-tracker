@@ -6,7 +6,7 @@
   "scripts": {
     "convex:deploy": "convex deploy"
   },
-  "dependencies": {
+  "devDependencies": {
     "convex": "^1.24.0"
   }
 }

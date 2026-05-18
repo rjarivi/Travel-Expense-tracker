@@ -1,4 +1,4 @@
-name: Deploy Convex Preview (PR)
+name: Convex Preview Deployment (PR)
 
 on:
   pull_request:
@@ -16,22 +16,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Convex CLI
-        run: npm install -g convex
-
       - name: Install dependencies
         run: npm install
 
-      - name: Validate deploy key
+      - name: Create/Update Convex preview deployment
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: |
           if [ -z "$CONVEX_DEPLOY_KEY" ]; then
             echo "CONVEX_DEPLOY_KEY secret is missing" >&2
             exit 1
           fi
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-
-      - name: Deploy Convex preview for PR
-        run: npx convex deploy --preview-run "pr-${{ github.event.pull_request.number }}"
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          # Convex manages per-PR preview deployments when configured for your project.
+          npm run convex:deploy -- --preview-create "pr-${{ github.event.pull_request.number }}"

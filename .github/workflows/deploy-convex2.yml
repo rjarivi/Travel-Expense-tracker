@@ -17,8 +17,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install Convex CLI
+        run: npm install -g convex
 
       - name: Deploy to Convex production
         env:
@@ -28,4 +28,4 @@ jobs:
             echo "CONVEX_DEPLOY_KEY secret is missing" >&2
             exit 1
           fi
-          npm run convex:deploy
+          npx convex deploy

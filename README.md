@@ -24,7 +24,7 @@ Your site URL will look like:
 
 Use your **production Convex URL** for hosted users. This app is already configured to call:
 
-- `https://beloved-cod-897.convex.site`
+- `https://majestic-fish-796.convex.site`
 
 ### 1) Create table in Convex Dashboard
 
@@ -93,8 +93,8 @@ I added Convex backend source files in `convex/` so you can deploy directly:
 
 These implement your exact production routes:
 
-- `POST https://beloved-cod-897.convex.site/expenses/save`
-- `GET https://beloved-cod-897.convex.site/expenses/load?tripKey=...`
+- `POST https://majestic-fish-796.convex.site/expenses/save`
+- `GET https://majestic-fish-796.convex.site/expenses/load?tripKey=...`
 
 
 ## GitHub + Convex deploy key setup (done-safe pattern)
@@ -113,13 +113,3 @@ Since you added `CONVEX_DEPLOY_KEY` in GitHub, this repo now includes CI workflo
 - Local/dev convex identifiers are ignored by `.gitignore` to avoid accidental key/URL leaks.
 - Production deploy happens only from `main` unless manually triggered via workflow_dispatch.
 - PR workflow assumes your Convex project supports preview deployments with deploy key access.
-
-
-## Merge-conflict prevention
-
-To reduce recurring merge conflicts, this repo now keeps a **single app entry file** (`index.html`) and two fixed workflow files:
-
-- `.github/workflows/deploy-convex.yml`
-- `.github/workflows/preview-convex-pr.yml`
-
-If branches diverge, prefer rebasing feature branches onto `main` before opening PRs.

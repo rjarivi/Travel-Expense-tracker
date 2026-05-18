@@ -420,11 +420,7 @@ input::placeholder{
 </div>
 <div class="form-group" style="margin-top:16px;">
   <label>Convex Cloud Sync</label>
-  <div class="row">
-    <input type="text" id="tripKey" placeholder="Trip key (e.g. bali-2026)"/>
-    <button class="btn btn-secondary" type="button" onclick="createTripKey()">✨ Create Key</button>
-  </div>
-  <div class="meta" id="syncStatus" style="margin-top:8px;">Last synced: never</div>
+  <input type="text" id="tripKey" placeholder="Trip key (e.g. bali-2026)"/>
   <div class="meta" style="margin-top:8px;">Deployment: majestic-fish-796 • saves use Convex HTTP Actions</div>
 </div>
 
@@ -505,7 +501,7 @@ JSON.parse(localStorage.getItem('luxuryExpenses')) || [];
 
 const people=['Person 1','Person 2','Person 3'];
 const APP_CONFIG={
-  convexHttpUrl:'https://beloved-cod-897.convex.site'
+  convexHttpUrl:'https://majestic-fish-796.convex.site'
 };
 
 let categoryChart;
@@ -964,8 +960,6 @@ async function saveToCloud(showAlerts=true){
   }
 
   localStorage.setItem('luxuryTripKey',tripKey);
-  setSyncStatus('saved');
-  localStorage.setItem('luxuryLastSyncStatus',document.getElementById('syncStatus').innerText);
   if(showAlerts) alert('Saved to Convex cloud.');
   return true;
 }
@@ -991,8 +985,6 @@ async function loadFromCloud(showAlerts=true){
   bootstrapCloudKey();
 render();
   localStorage.setItem('luxuryTripKey',tripKey);
-  setSyncStatus('loaded');
-  localStorage.setItem('luxuryLastSyncStatus',document.getElementById('syncStatus').innerText);
   if(showAlerts) alert('Loaded from Convex cloud.');
   return true;
 }
@@ -1005,23 +997,6 @@ function copyCloudShareLink(){
   alert('Share link copied. Send it to your group.');
 }
 
-function createTripKey(){
-  const input=document.getElementById('tripKey');
-  const now=new Date();
-  const stamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const rand=Math.random().toString(36).slice(2,6);
-  input.value=`trip-${stamp}-${rand}`;
-  localStorage.setItem('luxuryTripKey',input.value);
-  alert('Trip key created. Share this key or share-link with your group.');
-}
-
-function setSyncStatus(source){
-  const el=document.getElementById('syncStatus');
-  if(!el) return;
-  const at=new Date().toLocaleString();
-  el.innerText=`Last synced: ${at} (${source})`;
-}
-
 function bootstrapCloudKey(){
   const params=new URLSearchParams(location.search);
   const urlKey=params.get('tripKey');
@@ -1029,11 +1004,6 @@ function bootstrapCloudKey(){
   const key=urlKey || savedKey || '';
   const input=document.getElementById('tripKey');
   if(input) input.value=key;
-  const status=localStorage.getItem('luxuryLastSyncStatus');
-  if(status){
-    const el=document.getElementById('syncStatus');
-    if(el) el.innerText=status;
-  }
 }
 
 function render(){
@@ -1049,9 +1019,6 @@ function render(){
 
 bootstrapCloudKey();
 render();
-if(!document.getElementById('tripKey').value){
-  createTripKey();
-}
 loadFromCloud(false);
 
 </script>
