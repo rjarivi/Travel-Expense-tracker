@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Luxury Vacation Expense Tracker</title>
+<title>Travel Expense Tracker</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -250,6 +250,30 @@ input::placeholder{
   font-weight:600;
 }
 
+.split-people{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.pill{
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:999px;
+  padding:8px 12px;
+  font-size:13px;
+}
+
+.toolbar{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-top:12px;
+}
+
+.btn-secondary{
+  background:rgba(255,255,255,0.08);
+}
+
 @media(max-width:1100px){
 
   .layout{
@@ -270,9 +294,9 @@ input::placeholder{
 
 <div class="header">
   <div>
-    <h1>✈️ Luxury Vacation Expense Tracker</h1>
+    <h1>✈️ Travel Expense Tracker</h1>
     <div class="subtitle">
-      45-Day Trip • Multi Currency • Hotel Tracking • Smart Split
+      45-Day Trip • Multi Currency • Dynamic Split • Cloud Backup & Share
     </div>
   </div>
 </div>
@@ -369,15 +393,44 @@ input::placeholder{
 </div>
 
 <div class="form-group">
-  <label>Split</label>
+  <label>Expense Type</label>
 
-  <select id="splitType">
-    <option value="3">3 Way</option>
-    <option value="2">2 Way</option>
-    <option value="1">Personal</option>
+  <select id="expenseType">
+    <option value="shared">Shared / Split</option>
+    <option value="personal">Personal</option>
+    <option value="flight">Flight (Already Settled)</option>
   </select>
 </div>
 
+</div>
+
+<div class="form-group">
+  <label>Split With (dynamic)</label>
+  <div class="split-people">
+    <label class="pill"><input type="checkbox" class="splitPerson" value="Person 1" checked> Person 1</label>
+    <label class="pill"><input type="checkbox" class="splitPerson" value="Person 2" checked> Person 2</label>
+    <label class="pill"><input type="checkbox" class="splitPerson" value="Person 3" checked> Person 3</label>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-secondary" onclick="exportCloudBackup()">☁️ Export Cloud Backup</button>
+  <button class="btn btn-secondary" onclick="importCloudBackup()">📥 Import Backup</button>
+  <button class="btn btn-secondary" onclick="shareSettlement()">📤 Share Settlement</button>
+</div>
+<div class="form-group" style="margin-top:16px;">
+  <label>Convex Cloud Sync</label>
+  <div class="row">
+    <input type="text" id="tripKey" placeholder="Trip key (e.g. bali-2026)"/>
+    <button class="btn btn-secondary" type="button" onclick="createTripKey()">✨ Create Key</button>
+  </div>
+  <div class="meta" id="syncStatus" style="margin-top:8px;">Last synced: never</div>
+  <div class="meta" style="margin-top:8px;">Deployment: beloved-cod-897 • saves use Convex HTTP Actions</div>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-secondary" onclick="loadFromCloud()">🔄 Load from Convex</button>
+  <button class="btn btn-secondary" onclick="copyCloudShareLink()">🔗 Copy Share Link</button>
 </div>
 
 <h2 class="card-title" style="margin-top:30px;">
@@ -447,10 +500,27 @@ input::placeholder{
 <script>
 
 let expenses =
-JSON.parse(localStorage.getItem('luxuryExpenses')) || [];
+(JSON.parse(localStorage.getItem('luxuryExpenses')) || []).map(e=>e);
+
+const people=['Person 1','Person 2','Person 3'];
+const APP_CONFIG={
+  convexHttpUrl:'https://beloved-cod-897.convex.site'
+};
 
 let categoryChart;
 let payerChart;
+
+function normalizeExpense(raw){
+  const expenseType=raw?.expenseType || 'shared';
+  const paidBy=raw?.paidBy || 'Person 1';
+  let splitPeople=Array.isArray(raw?.splitPeople) ? raw.splitPeople : [];
+  if(expenseType==='personal'){
+    splitPeople=[paidBy];
+  }else{
+    splitPeople = splitPeople.length ? splitPeople : [...people];
+  }
+  return {...raw, expenseType, paidBy, splitPeople};
+}
 
 function save(){
 
@@ -459,6 +529,8 @@ function save(){
     JSON.stringify(expenses)
   );
 }
+
+expenses = expenses.map(normalizeExpense);
 
 function nightsBetween(checkin,checkout){
 
@@ -493,8 +565,10 @@ function addExpense(){
   const paidBy =
     document.getElementById('paidBy').value;
 
-  const splitType =
-    parseInt(document.getElementById('splitType').value);
+  const expenseType =
+    document.getElementById('expenseType').value;
+
+  const selectedPeople=[...document.querySelectorAll('.splitPerson:checked')].map(el=>el.value);
 
   const checkin =
     document.getElementById('checkin').value;
@@ -508,7 +582,9 @@ function addExpense(){
     return;
   }
 
-  expenses.push({
+  const splitPeople = expenseType==='personal' ? [paidBy] : (selectedPeople.length ? selectedPeople : [...people]);
+
+  expenses.push(normalizeExpense({
 
     id:Date.now(),
 
@@ -518,14 +594,15 @@ function addExpense(){
     amount,
     currency,
     paidBy,
-    splitType,
+    expenseType,
+    splitPeople,
     checkin,
     checkout
-  });
+  }));
 
   save();
-
   render();
+  queueAutoSave();
 }
 
 function removeExpense(id){
@@ -534,8 +611,8 @@ function removeExpense(id){
     expenses.filter(e=>e.id!==id);
 
   save();
-
   render();
+  queueAutoSave();
 }
 
 function renderExpenses(){
@@ -570,7 +647,7 @@ function renderExpenses(){
           <div class="meta">
             ${exp.date}
             • ${exp.paidBy}
-            • ${exp.splitType} way split
+            • ${exp.expenseType==='flight' ? 'flight (excluded)' : exp.expenseType==='personal' ? 'personal' : 'split: '+exp.splitPeople.join(', ')}
           </div>
 
           ${
@@ -771,26 +848,13 @@ function settlement(){
 
     paid[e.paidBy]+=e.amount;
 
-    const share =
-      e.amount / e.splitType;
-
-    if(e.splitType===3){
-
-      owes['Person 1']+=share;
-      owes['Person 2']+=share;
-      owes['Person 3']+=share;
+    if(e.expenseType==='flight'){
+      return;
     }
 
-    if(e.splitType===2){
-
-      owes['Person 1']+=share;
-      owes['Person 2']+=share;
-    }
-
-    if(e.splitType===1){
-
-      owes[e.paidBy]+=e.amount;
-    }
+    const members=(e.splitPeople && e.splitPeople.length)?e.splitPeople:[e.paidBy];
+    const share=e.amount / members.length;
+    members.forEach(person=>{owes[person]+=share;});
   });
 
   const currency =
@@ -838,6 +902,161 @@ function settlement(){
   });
 }
 
+function exportCloudBackup(){
+  const payload=JSON.stringify(expenses);
+  const blob=new Blob([payload],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='travel-expenses-backup.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importCloudBackup(){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='application/json';
+  input.onchange=(e)=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const parsed=JSON.parse(reader.result);
+        if(!Array.isArray(parsed)) throw new Error();
+        expenses=parsed.map(normalizeExpense);
+        save();
+        render();
+        queueAutoSave();
+      }catch(_){alert('Invalid backup file.');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function shareSettlement(){
+  const currency=expenses[0]?.currency || '$';
+  const lines=['Trip Settlement Snapshot'];
+  const paid={'Person 1':0,'Person 2':0,'Person 3':0};
+  const owes={'Person 1':0,'Person 2':0,'Person 3':0};
+  expenses.forEach(e=>{
+    paid[e.paidBy]+=e.amount;
+    if(e.expenseType==='flight') return;
+    const members=(e.splitPeople && e.splitPeople.length)?e.splitPeople:[e.paidBy];
+    const share=e.amount/members.length;
+    members.forEach(p=>owes[p]+=share);
+  });
+  people.forEach(p=>{
+    const bal=paid[p]-owes[p];
+    lines.push(`${p}: Paid ${currency}${paid[p].toFixed(2)}, Share ${currency}${owes[p].toFixed(2)}, Balance ${currency}${bal.toFixed(2)}`);
+  });
+  const text=lines.join('\n');
+  if(navigator.share){navigator.share({title:'Trip Settlement',text});}
+  else{navigator.clipboard.writeText(text); alert('Settlement copied to clipboard.');}
+}
+
+
+
+let autoSaveTimer=null;
+
+function queueAutoSave(){
+  if(autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer=setTimeout(()=>{saveToCloud(false);},500);
+}
+
+async function saveToCloud(showAlerts=true){
+  const tripKey=document.getElementById('tripKey').value.trim();
+  if(!tripKey){ if(showAlerts) alert('Enter a trip key first.'); return false; }
+
+  try{
+    const res=await fetch(`${APP_CONFIG.convexHttpUrl}/expenses/save`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tripKey,expenses,updatedAt:new Date().toISOString()})
+    });
+
+    if(!res.ok){
+      if(showAlerts) alert('Cloud save failed. Ensure Convex HTTP action /expenses/save exists.');
+      return false;
+    }
+
+    localStorage.setItem('luxuryTripKey',tripKey);
+    setSyncStatus('saved');
+    localStorage.setItem('luxuryLastSyncStatus',document.getElementById('syncStatus').innerText);
+    if(showAlerts) alert('Saved to Convex cloud.');
+    return true;
+  }catch(_){
+    if(showAlerts) alert('Cloud save failed due to network or CORS error.');
+    return false;
+  }
+}
+
+async function loadFromCloud(showAlerts=true){
+  const tripKey=document.getElementById('tripKey').value.trim();
+  if(!tripKey){ if(showAlerts) alert('Enter a trip key first.'); return false; }
+
+  const res=await fetch(`${APP_CONFIG.convexHttpUrl}/expenses/load?tripKey=${encodeURIComponent(tripKey)}`);
+  if(!res.ok){
+    if(showAlerts) alert('Cloud load failed. Ensure Convex HTTP action /expenses/load exists.');
+    return false;
+  }
+
+  const payload=await res.json();
+  if(!payload || !Array.isArray(payload.expenses)){
+    if(showAlerts) alert('No expense data found for this trip key.');
+    return false;
+  }
+
+  expenses=payload.expenses.map(normalizeExpense);
+  save();
+  render();
+  localStorage.setItem('luxuryTripKey',tripKey);
+  setSyncStatus('loaded');
+  localStorage.setItem('luxuryLastSyncStatus',document.getElementById('syncStatus').innerText);
+  if(showAlerts) alert('Loaded from Convex cloud.');
+  return true;
+}
+
+function copyCloudShareLink(){
+  const tripKey=document.getElementById('tripKey').value.trim();
+  if(!tripKey){ alert('Enter a trip key first.'); return; }
+  const shareUrl=`${location.origin}${location.pathname}?tripKey=${encodeURIComponent(tripKey)}`;
+  navigator.clipboard.writeText(shareUrl);
+  alert('Share link copied. Send it to your group.');
+}
+
+function createTripKey(){
+  const input=document.getElementById('tripKey');
+  const now=new Date();
+  const stamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const rand=Math.random().toString(36).slice(2,6);
+  input.value=`trip-${stamp}-${rand}`;
+  localStorage.setItem('luxuryTripKey',input.value);
+  alert('Trip key created. Share this key or share-link with your group.');
+}
+
+function setSyncStatus(source){
+  const el=document.getElementById('syncStatus');
+  if(!el) return;
+  const at=new Date().toLocaleString();
+  el.innerText=`Last synced: ${at} (${source})`;
+}
+
+function bootstrapCloudKey(){
+  const params=new URLSearchParams(location.search);
+  const urlKey=params.get('tripKey');
+  const savedKey=localStorage.getItem('luxuryTripKey');
+  const key=urlKey || savedKey || '';
+  const input=document.getElementById('tripKey');
+  if(input) input.value=key;
+  const status=localStorage.getItem('luxuryLastSyncStatus');
+  if(status){
+    const el=document.getElementById('syncStatus');
+    if(el) el.innerText=status;
+  }
+}
+
 function render(){
 
   renderExpenses();
@@ -849,7 +1068,20 @@ function render(){
   settlement();
 }
 
+const tripKeyInput=document.getElementById('tripKey');
+if(tripKeyInput){
+  tripKeyInput.addEventListener('change',()=>{
+    localStorage.setItem('luxuryTripKey',tripKeyInput.value.trim());
+    queueAutoSave();
+  });
+}
+
+bootstrapCloudKey();
 render();
+if(!document.getElementById('tripKey').value){
+  createTripKey();
+}
+loadFromCloud(false);
 
 </script>
 
