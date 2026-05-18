@@ -24,7 +24,7 @@ Your site URL will look like:
 
 Use your **production Convex URL** for hosted users. This app is already configured to call:
 
-- `https://beloved-cod-897.convex.site`
+- `https://majestic-fish-796.convex.site`
 
 ### 1) Create table in Convex Dashboard
 
@@ -93,8 +93,8 @@ I added Convex backend source files in `convex/` so you can deploy directly:
 
 These implement your exact production routes:
 
-- `POST https://beloved-cod-897.convex.site/expenses/save`
-- `GET https://beloved-cod-897.convex.site/expenses/load?tripKey=...`
+- `POST https://majestic-fish-796.convex.site/expenses/save`
+- `GET https://majestic-fish-796.convex.site/expenses/load?tripKey=...`
 
 
 ## GitHub + Convex deploy key setup (done-safe pattern)
