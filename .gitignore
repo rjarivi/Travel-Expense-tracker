@@ -1,0 +1,9 @@
+# Convex local env
+.convex/
+.env.local
+.env.*.local
+convex/.env.local
+
+# OS/Editor
+.DS_Store
+.vscode/
