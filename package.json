@@ -1,0 +1,12 @@
+{
+  "name": "travel-expense-tracker",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Travel Expense Tracker with Convex backend",
+  "scripts": {
+    "convex:deploy": "convex deploy"
+  },
+  "devDependencies": {
+    "convex": "^1.24.0"
+  }
+}

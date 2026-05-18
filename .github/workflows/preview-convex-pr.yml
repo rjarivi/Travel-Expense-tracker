@@ -1,0 +1,31 @@
+name: Convex Preview Deployment (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create/Update Convex preview deployment
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
+            echo "CONVEX_DEPLOY_KEY secret is missing" >&2
+            exit 1
+          fi
+          # Convex manages per-PR preview deployments when configured for your project.
+          npm run convex:deploy -- --preview-create "pr-${{ github.event.pull_request.number }}"
