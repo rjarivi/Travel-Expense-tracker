@@ -2,7 +2,7 @@ name: Deploy Convex (Production)
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -17,22 +17,15 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Convex CLI
-        run: npm install -g convex
-
       - name: Install dependencies
         run: npm install
 
-      - name: Validate deploy key
+      - name: Deploy to Convex production
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: |
           if [ -z "$CONVEX_DEPLOY_KEY" ]; then
             echo "CONVEX_DEPLOY_KEY secret is missing" >&2
             exit 1
           fi
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-
-      - name: Deploy to Convex production
-        run: npx convex deploy
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          npm run convex:deploy
