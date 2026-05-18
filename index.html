@@ -587,6 +587,7 @@ function addExpense(){
 
   bootstrapCloudKey();
 render();
+  saveToCloud(false);
 }
 
 function removeExpense(id){
@@ -598,6 +599,7 @@ function removeExpense(id){
 
   bootstrapCloudKey();
 render();
+  saveToCloud(false);
 }
 
 function renderExpenses(){
@@ -942,9 +944,9 @@ function shareSettlement(){
 }
 
 
-async function saveToCloud(){
+async function saveToCloud(showAlerts=true){
   const tripKey=document.getElementById('tripKey').value.trim();
-  if(!tripKey){ alert('Enter a trip key first.'); return; }
+  if(!tripKey){ if(showAlerts) alert('Enter a trip key first.'); return false; }
 
   const res=await fetch(`${APP_CONFIG.convexHttpUrl}/expenses/save`,{
     method:'POST',
@@ -953,28 +955,29 @@ async function saveToCloud(){
   });
 
   if(!res.ok){
-    alert('Cloud save failed. Ensure Convex HTTP action /expenses/save exists.');
-    return;
+    if(showAlerts) alert('Cloud save failed. Ensure Convex HTTP action /expenses/save exists.');
+    return false;
   }
 
   localStorage.setItem('luxuryTripKey',tripKey);
-  alert('Saved to Convex cloud.');
+  if(showAlerts) alert('Saved to Convex cloud.');
+  return true;
 }
 
-async function loadFromCloud(){
+async function loadFromCloud(showAlerts=true){
   const tripKey=document.getElementById('tripKey').value.trim();
-  if(!tripKey){ alert('Enter a trip key first.'); return; }
+  if(!tripKey){ if(showAlerts) alert('Enter a trip key first.'); return false; }
 
   const res=await fetch(`${APP_CONFIG.convexHttpUrl}/expenses/load?tripKey=${encodeURIComponent(tripKey)}`);
   if(!res.ok){
-    alert('Cloud load failed. Ensure Convex HTTP action /expenses/load exists.');
-    return;
+    if(showAlerts) alert('Cloud load failed. Ensure Convex HTTP action /expenses/load exists.');
+    return false;
   }
 
   const payload=await res.json();
   if(!payload || !Array.isArray(payload.expenses)){
-    alert('No expense data found for this trip key.');
-    return;
+    if(showAlerts) alert('No expense data found for this trip key.');
+    return false;
   }
 
   expenses=payload.expenses;
@@ -982,7 +985,8 @@ async function loadFromCloud(){
   bootstrapCloudKey();
 render();
   localStorage.setItem('luxuryTripKey',tripKey);
-  alert('Loaded from Convex cloud.');
+  if(showAlerts) alert('Loaded from Convex cloud.');
+  return true;
 }
 
 function copyCloudShareLink(){
@@ -1015,6 +1019,7 @@ function render(){
 
 bootstrapCloudKey();
 render();
+loadFromCloud(false);
 
 </script>
 
